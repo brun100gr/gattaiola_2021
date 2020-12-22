@@ -2,6 +2,7 @@
                     // Has to be done before including "OTA.h"
 
 #include "OTA.h"
+#include "telegramBot.h"
 #include "credentials.h"
 
 uint32_t entry;
@@ -11,11 +12,13 @@ void setup() {
   Serial.println("Booting");
 
   setupOTA("gattaiola", mySSID, myPASSWORD);
+  setupTelegramBot(mySSID, myPASSWORD);
 }
 
 void loop() {
   entry = micros();
   ArduinoOTA.handle();
+  telegramLoop();
   TelnetStream.println(micros()-entry);
   TelnetStream.println("Loop");
   delay(1000);
