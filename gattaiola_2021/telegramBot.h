@@ -1,70 +1,37 @@
+/*
+  Rui Santos
+  Complete project details at https://RandomNerdTutorials.com/telegram-esp32-motion-detection-arduino/
+  
+  Project created using Brian Lough's Universal Telegram Bot Library: https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot
+*/
+
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <UniversalTelegramBot.h>
+#include <ArduinoJson.h>
+#include <MapFloat.h>
 #include "credentials.h"
 
-// Telegram BOT Token (Get from Botfather)
-#define BOT_TOKEN "1424090199:AAGjbW1gEBmCfZ8nn7hbGzMHflGBJ9NBIbc"
+// Initialize Telegram BOT
+#define BOTtoken "1424090199:AAGjbW1gEBmCfZ8nn7hbGzMHflGBJ9NBIbc"  // your Bot Token (Get from Botfather)
 
-const unsigned long BOT_MTBS = 1000; // mean time between scan messages
+// Use @myidbot to find out the chat ID of an individual or a group
+// Also note that you need to click "start" on a bot before it can
+// message you
+#define CHAT_ID "1007315026"
 
-WiFiClientSecure secured_client;
-UniversalTelegramBot bot(BOT_TOKEN, secured_client);
-unsigned long bot_lasttime; // last time messages' scan has been done
+WiFiClientSecure client;
+UniversalTelegramBot bot(BOTtoken, client);
 
-void handleNewMessages(int numNewMessages)
-{
-  for (int i = 0; i < numNewMessages; i++)
-  {
-    bot.sendMessage(bot.messages[i].chat_id, bot.messages[i].text, "");
-    Serial.println(bot.messages[i].text);
-    TelnetStream.println(bot.messages[i].text);
-  }
+void setupTelegramBot() {
+  bot.sendMessage(CHAT_ID, "Bot started up", "");
 }
 
-void setupTelegramBot(const char* ssid, const char* password)
-{
-  Serial.begin(115200);
-  Serial.println();
-
-  // attempt to connect to Wifi network:
-  Serial.print("Connecting to Wifi SSID ");
-  Serial.print(ssid);
-  WiFi.begin(ssid, password);
-  secured_client.setCACert(TELEGRAM_CERTIFICATE_ROOT); // Add root certificate for api.telegram.org
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.print(".");
-    delay(500);
-  }
-  Serial.print("\nWiFi connected. IP address: ");
-  Serial.println(WiFi.localIP());
-
-  Serial.print("Retrieving time: ");
-  configTime(0, 0, "pool.ntp.org"); // get UTC time via NTP
-  time_t now = time(nullptr);
-  while (now < 24 * 3600)
-  {
-    Serial.print(".");
-    delay(100);
-    now = time(nullptr);
-  }
-  Serial.println(now);
-}
-
-void telegramLoop()
-{
-  if (millis() - bot_lasttime > BOT_MTBS)
-  {
-    int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
-
-    while (numNewMessages)
-    {
-      Serial.println("got response");
-      handleNewMessages(numNewMessages);
-      numNewMessages = bot.getUpdates(bot.last_message_received + 1);
-    }
-
-    bot_lasttime = millis();
-  }
+void sendTelegramMessage(int value) {
+    float batteryVoltage = mapFloat(value, 0.0f, 4095.0f, 0.0f, 4.2f);
+    float batteryLevel = mapFloat(value, 0.0f, 4095.0f, 0.0f, 100.0f);
+    bot.sendMessage(CHAT_ID, "Battery voltage(" + String(value) + "): " + String(batteryVoltage) + "V - " + String(batteryLevel) + "%", "");
+    TelnetStream.println("Battery voltage(" + String(value) + "): " + String(batteryVoltage) + "V - " + String(batteryLevel) + "%");
+    Serial.println("Motion Detected");
+    delay(1000);
 }

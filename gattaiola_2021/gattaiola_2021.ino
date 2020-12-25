@@ -8,22 +8,29 @@
 
 uint32_t entry;
 
+// Battery voltage is connected to GPIO 33 (Analog ADC1_CH5) 
+const int batteryVoltagePin = 33;
+
 void setup() {
   Serial.begin(115200);
   Serial.println("Booting");
 
   setupOTA("gattaiola", mySSID, myPASSWORD);
-  setupTelegramBot(mySSID, myPASSWORD);
+  setupTelegramBot();
 }
+
+int potValue = 0;
 bool sendOnce = true;
 void loop() {
   entry = micros();
   ArduinoOTA.handle();
-  telegramLoop();
+  potValue = analogRead(batteryVoltagePin);
   if (sendOnce == true) {
-    sendMail(123);
+    sendMail(potValue);
     sendOnce = false;
   }
-  delay(1000);
+  sendTelegramMessage(potValue);
+  TelnetStream.println("Battery: "); TelnetStream.println(batteryVoltagePin);  TelnetStream.println("");
+  delay(10000);
   // Your code here
 }
